@@ -4,7 +4,7 @@ Static single-page site for a two-person conference team (Claudia and Emily). De
 Schedule tab's shared state lives in one Supabase row and syncs in real time between devices.
 
 ## Layout
-- `site/index.html` — the whole app (CSS, HTML, JS inline). Tabs: Daily read, Talk tracks, Playbook, Modules, Prep, Schedule.
+- `site/index.html` — the whole app (CSS, HTML, JS inline). Tabs: Home, Daily read, Talk tracks, Playbook, Modules, Prep, Schedule.
 - `site/storage.js` — Supabase adapter. Exposes `window.ScheduleStore = { subscribe(onData, onError), save(state) }`.
 - `site/config.js` — Supabase URL, anon key, schedule row id. Edit this; do not hardcode keys elsewhere.
 - `supabase/schema.sql` — table, realtime publication, RLS policies, seed row.
@@ -32,11 +32,22 @@ Schedule tab's shared state lives in one Supabase row and syncs in real time bet
 3. Open the site on two devices, pick a session on one, confirm the other updates within a second and the status line reads "Saved and shared".
 
 ## Passcode gate
-`index.html` shows a passcode screen on first visit. `EDIT_CODE` (default 8888) enables editing; `VIEW_CODE` (default 5555)
-opens the site read-only (`body.view-only`, `window.YASC_MODE`, every write path checks `canEdit()`). The choice is
-remembered in localStorage; the pill in the top bar reopens the gate. Codes live in `site/config.js`.
+`index.html` shows a passcode screen on first visit. `CLAUDIA_CODE` (default 3333) and `EMILY_CODE` (default 8888) each
+enable editing and set `window.YASC_USER` to `c` or `e`; `VIEW_CODE` (default 5555) opens the site read-only with no name
+(`body.view-only`, `window.YASC_MODE`, every write path checks `canEdit()`). The choice is remembered in localStorage
+(`yasc-mode`, `yasc-user`); the pill in the top bar shows the name and reopens the gate. Codes live in `site/config.js`.
 This is a client-side convenience, not security: the anon key can still write the row directly. For real protection
 see Access below.
+
+## Home tab
+The page always opens on Home. It greets the signed-in person, shows the date and time in San Diego, a countdown to the
+booth opening (Oct 7, 8:00 AM PT), San Diego weather plus the Oct 7 to 9 forecast (Open-Meteo, no key, cached 30 min in
+localStorage), and Right now / Up next / Later today for both people. All times are Pacific.
+- The schedule script exposes `window.YascSched` (read-only helpers) and fires a `yasc-sched` event on every render;
+  the gate fires `yasc-user`. Home re-renders on both, and each minute while visible.
+- Status rules: inside a picked non-booth session = that session; otherwise inside booth hours = at the booth;
+  otherwise free ("Off the clock" after the booth closes).
+- Preview any moment with `?now=2026-10-07T13:15` (Pacific wall time).
 
 ## Access (decide before sharing the URL)
 V1 RLS lets the anon key read and write the single `main` row. Anyone who finds the key in `config.js` can edit the schedule.
@@ -50,7 +61,7 @@ Options, in order of effort:
 - Times are 12-hour AM/PM strings (`"9:50 AM"`); `toMin()` / `fmt()` convert. Keep that format in seed data and imports.
 - No em dashes anywhere in copy. US spelling.
 - Copy is app voice, not conversational; no "I" or "send me".
-- Keep the page self-contained apart from Google Fonts and the supabase-js UMD from jsdelivr.
+- Keep the page self-contained apart from Google Fonts, the supabase-js UMD from jsdelivr, and the Open-Meteo weather fetch.
 
 ## Open items
 - Friday agenda not yet loaded (import via Pick sessions > Import, or add to SEED).
