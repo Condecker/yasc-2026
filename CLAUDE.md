@@ -41,8 +41,7 @@ see Access below.
 
 ## Home tab
 The page always opens on Home. It greets the signed-in person, shows the date and time in San Diego, a countdown to the
-booth opening (Oct 7, 8:00 AM PT), San Diego weather plus the Oct 7 to 9 forecast (Open-Meteo, no key, cached 30 min in
-localStorage), and Right now / Up next / Later today for both people. All times are Pacific.
+booth opening (Oct 7, 8:00 AM PT), and Right now / Up next / Later today for both people. All times are Pacific.
 - The schedule script exposes `window.YascSched` (read-only helpers) and fires a `yasc-sched` event on every render;
   the gate fires `yasc-user`. Home re-renders on both, and each minute while visible.
 - Status rules: inside a picked non-booth session = that session; otherwise inside booth hours = at the booth;
@@ -61,7 +60,7 @@ Options, in order of effort:
 - Times are 12-hour AM/PM strings (`"9:50 AM"`); `toMin()` / `fmt()` convert. Keep that format in seed data and imports.
 - No em dashes anywhere in copy. US spelling.
 - Copy is app voice, not conversational; no "I" or "send me".
-- Keep the page self-contained apart from Google Fonts, the supabase-js UMD from jsdelivr, and the Open-Meteo weather fetch.
+- Keep the page self-contained apart from Google Fonts and the supabase-js UMD from jsdelivr.
 
 ## Open items
 - Friday agenda not yet loaded (import via Pick sessions > Import, or add to SEED).

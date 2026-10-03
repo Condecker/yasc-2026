@@ -149,8 +149,6 @@ details>.body>*:first-child{margin-top:12px}
     <div class="hm-count" id="hmCount"></div>
   </div>
 
-  <div class="hm-wx" id="hmWx" hidden></div>
-
   <div class="hm-card" id="hmNowCard" hidden>
     <div class="hm-lbl"><span class="hm-live"></span>Right now <span class="hm-time" id="hmNowTime"></span></div>
     <div id="hmNow"></div>
@@ -1637,16 +1635,6 @@ body.view-only .seg button,body.view-only .star,body.view-only #afSave,body.view
 .hm-tiles span{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;opacity:.85}
 .hm-cap{font-size:.84rem;opacity:.9;margin-top:8px}
 .hm-badge{display:inline-block;background:#E2B15C;color:#1D2733;font-weight:600;font-size:.82rem;padding:3px 10px;border-radius:99px}
-.hm-wx{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px 14px;margin:0 0 12px}
-.hm-wxnow{display:flex;align-items:center;gap:12px}
-.hm-wxic{font-size:2rem;line-height:1}
-.hm-wxnow b{font-family:var(--serif);font-size:1.5rem;margin-right:6px}
-.hm-wxnow small{display:block;color:var(--ink-2);font-size:.82rem}
-.hm-wxdays{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
-.hm-wxdays div{text-align:center;font-size:.8rem;color:var(--ink-2)}
-.hm-wxdays i{display:block;font-style:normal;font-size:1.3rem;margin:2px 0}
-.hm-wxdays b{color:var(--ink);font-size:.95rem}
-.hm-wxnote{font-size:.8rem;color:var(--ink-2);margin-top:8px}
 .hm-card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px 14px;margin:0 0 12px}
 .hm-lbl{font-size:.76rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);display:flex;align-items:center;gap:6px;margin-bottom:4px}
 .hm-time{margin-left:auto;color:var(--navy);text-transform:none;letter-spacing:0;font-size:.86rem}
@@ -1677,6 +1665,7 @@ body.view-only .seg button,body.view-only .star,body.view-only #afSave,body.view
 </style>
 <script>
 (function(){
+  try{ localStorage.removeItem('yasc-wx'); }catch(e){}
   var NAMES={c:'Claudia',e:'Emily'}, TZ='America/Los_Angeles';
   var DAYKEY={'2026-10-07':'wed','2026-10-08':'thu','2026-10-09':'fri'}, ORDER=['wed','thu','fri'], DAYNAME={wed:'Wednesday',thu:'Thursday',fri:'Friday'};
   var OPEN=Date.UTC(2026,9,7,15,0), CLOSE=Date.UTC(2026,9,10,0,0); /* booth opens 8:00 AM PT Oct 7; closes 5:00 PM PT Oct 9 */
@@ -1754,33 +1743,13 @@ body.view-only .seg button,body.view-only .star,body.view-only #afSave,body.view
     if(rest&&rest.length){ $('hmDayLbl').textContent=restLbl; $('hmDay').innerHTML=lineup(rest,order,ch[0]); dayC.hidden=false; }
   }
 
-  /* ---------- weather (Open-Meteo, no key) ---------- */
-  var WX={0:['Clear','☀️'],1:['Mostly clear','🌤️'],2:['Partly cloudy','⛅'],3:['Overcast','☁️'],45:['Fog','🌫️'],51:['Drizzle','🌦️'],61:['Rain','🌧️'],71:['Snow','🌨️'],80:['Showers','🌦️'],95:['Thunderstorms','⛈️']};
-  function wxOf(c){ if(WX[c]) return WX[c]; var ks=[95,80,71,61,51,45]; for(var i=0;i<ks.length;i++) if(c>=ks[i]) return WX[ks[i]]; return WX[3]; }
-  function renderWx(w){
-    try{ var c=w.current, cw=wxOf(c.weather_code), dl=w.daily, today=dl.time.indexOf(pt(now()).ymd);
-      var h='<div class="hm-wxnow"><span class="hm-wxic">'+cw[1]+'</span><div><b>'+Math.round(c.temperature_2m)+'&deg;F</b>'+cw[0]+'<small>San Diego'+(today>-1?' · High '+Math.round(dl.temperature_2m_max[today])+'&deg; · Low '+Math.round(dl.temperature_2m_min[today])+'&deg;':'')+'</small></div></div>';
-      var days=[['2026-10-07','Wed 10/7'],['2026-10-08','Thu 10/8'],['2026-10-09','Fri 10/9']].map(function(x){ var i=dl.time.indexOf(x[0]); return i<0?null:'<div>'+x[1]+'<i>'+wxOf(dl.weather_code[i])[1]+'</i><b>'+Math.round(dl.temperature_2m_max[i])+'&deg;</b> / '+Math.round(dl.temperature_2m_min[i])+'&deg;</div>'; });
-      if(days.every(Boolean)) h+='<div class="hm-wxdays">'+days.join('')+'</div>';
-      else if(now()<OPEN) h+='<div class="hm-wxnote">Booth-week forecast appears about two weeks out.</div>';
-      $('hmWx').innerHTML=h; $('hmWx').hidden=false; }catch(e){}
-  }
-  function loadWx(){
-    var c=null; try{ c=JSON.parse(localStorage.getItem('yasc-wx')||'null'); }catch(e){}
-    if(c&&c.data){ renderWx(c.data); if(Date.now()-c.at<30*60000) return; }
-    var url='https://api.open-meteo.com/v1/forecast?latitude=32.7076&longitude=-117.1625&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=America%2FLos_Angeles&forecast_days=16';
-    if(!window.fetch) return;
-    fetch(url).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(data){ try{ localStorage.setItem('yasc-wx',JSON.stringify({at:Date.now(),data:data})); }catch(e){} renderWx(data); }).catch(function(){});
-  }
-
   /* ---------- wiring ---------- */
   document.getElementById('pane-home').addEventListener('click',function(e){ var b=e.target.closest('[data-goto]'); if(!b) return; var t=document.querySelector('.tabbar [data-pane="'+b.dataset.goto+'"]'); if(t) t.click(); });
   ['yasc-sched','yasc-user','yasc-pane'].forEach(function(ev){ window.addEventListener(ev,render); });
   var lastMin=null;
   setInterval(function(){ if(!$('pane-home').classList.contains('on')) return; var ms=now(), m=pt(ms).min; if(m!==lastMin){ lastMin=m; render(); } else renderCount(ms,DAYKEY[pt(ms).ymd]); },1000);
-  setInterval(loadWx,30*60000);
-  document.addEventListener('visibilitychange',function(){ if(!document.hidden){ render(); loadWx(); } });
-  render(); loadWx();
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) render(); });
+  render();
 })();
 </script>
 </body>
