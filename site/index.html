@@ -125,7 +125,7 @@ details>.body>*:first-child{margin-top:12px}
 <div class="gate" id="gate" hidden>
   <form class="box" id="gateForm">
     <h1>CTS at YASC 2026</h1>
-    <p>Enter the passcode to continue.</p>
+    <p>Enter your passcode to continue.</p>
     <input id="gateCode" inputmode="numeric" autocomplete="one-time-code" maxlength="8" aria-label="Passcode" autofocus>
     <button type="submit">Continue</button>
     <div class="err" id="gateErr"></div>
@@ -133,15 +133,45 @@ details>.body>*:first-child{margin-top:12px}
 </div>
 <div class="top"><div class="in">
   <a class="brand" href="#" onclick="window.scrollTo({top:0});return false;">CTS at YASC 2026</a>
-  <span class="cur" id="curTab">Daily read</span>
+  <span class="cur" id="curTab">Home</span>
   <button type="button" class="modepill" id="modePill" title="Change passcode"></button>
   <button type="button" id="toggleAll">Expand all</button>
 </div></div>
 
 <main class="wrap">
 
+<!-- ===================== HOME ===================== -->
+<section class="pane on" id="pane-home" data-title="Home">
+  <div class="hm-hero">
+    <div class="hm-date" id="hmDate">&nbsp;</div>
+    <h1 id="hmHello">Welcome</h1>
+    <div class="hm-sub" id="hmSub">CTS at YASC 2026 · San Diego · October 7 to 9</div>
+    <div class="hm-count" id="hmCount"></div>
+  </div>
+
+  <div class="hm-card" id="hmNowCard" hidden>
+    <div class="hm-lbl"><span class="hm-live"></span>Right now <span class="hm-time" id="hmNowTime"></span></div>
+    <div id="hmNow"></div>
+  </div>
+  <div class="hm-card" id="hmNextCard" hidden>
+    <div class="hm-lbl">Up next <span class="hm-time" id="hmNextTime"></span></div>
+    <div id="hmNext"></div>
+  </div>
+  <div class="hm-card" id="hmDayCard" hidden>
+    <div class="hm-lbl" id="hmDayLbl">Rest of today</div>
+    <div id="hmDay" class="hm-day"></div>
+  </div>
+
+  <div class="hm-go">
+    <button type="button" data-goto="pane-daily"><span>&#9788;</span>Daily read</button>
+    <button type="button" data-goto="pane-sched"><span>&#9716;</span>Schedule</button>
+    <button type="button" data-goto="pane-tracks"><span>&#9998;</span>Talk tracks</button>
+  </div>
+</section>
+<!-- ===================== /HOME ===================== -->
+
 <!-- ===================== DAILY READ ===================== -->
-<section class="pane on" id="pane-daily" data-title="Daily read">
+<section class="pane" id="pane-daily" data-title="Daily read">
   <h1>Daily read</h1>
   <p class="lede">Read every morning until October 7. Everything here should be memorized before booth day.</p>
 
@@ -1141,6 +1171,7 @@ Please have the person who runs the process on the call, with Yardi open.</div>
 </main>
 
 <nav class="tabbar" aria-label="Sections"><div class="in">
+  <button type="button" data-pane="pane-home"><span class="ic">&#8962;</span>Home</button>
   <button type="button" data-pane="pane-daily"><span class="ic">&#9788;</span>Daily read</button>
   <button type="button" data-pane="pane-tracks"><span class="ic">&#9998;</span>Talk tracks</button>
   <button type="button" data-pane="pane-playbook"><span class="ic">&#9776;</span>Playbook</button>
@@ -1160,7 +1191,8 @@ Please have the person who runs the process on the call, with Yardi open.</div>
     btns.forEach(function(b){b.classList.toggle('on',b.getAttribute('data-pane')===id)});
     var p=document.getElementById(id); if(p){cur.textContent=p.getAttribute('data-title');}
     if(!keepScroll) window.scrollTo({top:0});
-    try{localStorage.setItem('yasc-tab',id);}catch(e){}
+    document.getElementById('toggleAll').style.visibility=(id==='pane-home'?'hidden':'');
+    try{window.dispatchEvent(new Event('yasc-pane'));}catch(e){}
   }
   btns.forEach(function(b){b.addEventListener('click',function(){show(b.getAttribute('data-pane'));});});
   // jump links inside a pane: open the target details
@@ -1183,9 +1215,7 @@ Please have the person who runs the process on the call, with Yardi open.</div>
     try{var o=JSON.parse(localStorage.getItem('yasc-open')||'{}'); o[d.id]=d.open; localStorage.setItem('yasc-open',JSON.stringify(o));}catch(err){}
   },true);
   try{var o=JSON.parse(localStorage.getItem('yasc-open')||'{}'); Object.keys(o).forEach(function(k){var d=document.getElementById(k); if(d&&d.tagName==='DETAILS') d.open=!!o[k];});}catch(e){}
-  var start='pane-daily'; try{start=localStorage.getItem('yasc-tab')||start;}catch(e){}
-  if(!document.getElementById(start)) start='pane-daily';
-  show(start,true);
+  show('pane-home',true);
   // back to top
   var tt=document.getElementById('totop');
   window.addEventListener('scroll',function(){tt.classList.toggle('show',window.scrollY>600)},{passive:true});
@@ -1293,17 +1323,21 @@ body.view-only .seg button,body.view-only .star,body.view-only #afSave,body.view
 <script src="config.js"></script>
 <script>
 (function(){
-  var cfg=window.YASC_CONFIG||{}; var EDIT='8888', VIEW='5555';
-  function codes(){ var c=window.YASC_CONFIG||{}; return {edit:String(c.EDIT_CODE||EDIT), view:String(c.VIEW_CODE||VIEW)}; }
-  function setMode(m){ window.YASC_MODE=m; try{localStorage.setItem('yasc-mode',m);}catch(e){} document.body.classList.toggle('view-only',m!=='edit'); var p=document.getElementById('modePill'); if(p) p.textContent=(m==='edit'?'Editing':'View only'); }
+  /* Each person has their own code; both can edit. VIEW_CODE opens read-only with no name. */
+  var DEF={c:'3333', e:'8888', view:'5555'}, NAMES={c:'Claudia', e:'Emily'};
+  function codes(){ var c=window.YASC_CONFIG||{}; return {c:String(c.CLAUDIA_CODE||DEF.c), e:String(c.EMILY_CODE||DEF.e), view:String(c.VIEW_CODE||DEF.view)}; }
+  function setMode(m,u){ u=(m==='edit'&&NAMES[u])?u:null; window.YASC_MODE=m; window.YASC_USER=u;
+    try{localStorage.setItem('yasc-mode',m); if(u) localStorage.setItem('yasc-user',u); else localStorage.removeItem('yasc-user');}catch(e){}
+    document.body.classList.toggle('view-only',m!=='edit'); var p=document.getElementById('modePill'); if(p) p.textContent=u?NAMES[u]:'View only';
+    try{window.dispatchEvent(new Event('yasc-user'));}catch(e){} }
   function show(){ var g=document.getElementById('gate'); g.hidden=false; setTimeout(function(){document.getElementById('gateCode').focus()},50); }
   function hide(){ document.getElementById('gate').hidden=true; }
   window.yascGate={ setMode:setMode, show:show };
   document.addEventListener('DOMContentLoaded',function(){
-    var saved=null; try{saved=localStorage.getItem('yasc-mode');}catch(e){}
-    if(saved==='edit'||saved==='view'){ setMode(saved); } else { setMode('view'); show(); }
+    var saved=null, user=null; try{saved=localStorage.getItem('yasc-mode'); user=localStorage.getItem('yasc-user');}catch(e){}
+    if(saved==='edit'&&NAMES[user]){ setMode('edit',user); } else if(saved==='view'){ setMode('view'); } else { setMode('view'); show(); }
     document.getElementById('gateForm').addEventListener('submit',function(e){ e.preventDefault(); var c=codes(), val=document.getElementById('gateCode').value.trim(); var err=document.getElementById('gateErr');
-      if(val===c.edit){ setMode('edit'); hide(); } else if(val===c.view){ setMode('view'); hide(); } else { err.textContent='That passcode is not right.'; document.getElementById('gateCode').value=''; } });
+      if(val===c.c){ setMode('edit','c'); hide(); } else if(val===c.e){ setMode('edit','e'); hide(); } else if(val===c.view){ setMode('view'); hide(); } else { err.textContent='That passcode is not right.'; document.getElementById('gateCode').value=''; } });
     document.getElementById('modePill').addEventListener('click',function(){ document.getElementById('gateCode').value=''; document.getElementById('gateErr').textContent=''; show(); });
   });
 })();
@@ -1378,6 +1412,8 @@ body.view-only .seg button,body.view-only .star,body.view-only #afSave,body.view
     var gaps=segs.filter(function(s){return s.n===0}).map(function(s){return [s.a,s.b]});
     return {segs:segs,gaps:gaps,hours:hours,range:[a0,z0]};
   }
+  /* read-only view of the schedule for the Home pane */
+  window.YascSched={ state:function(){return state;}, personBlocks:personBlocks, boothRange:boothRange, toMin:toMin, fmt:fmt };
   function hm(min){ var h=Math.floor(min/60), m=min%60; return (h?h+'h':'')+(m?(h?' ':'')+m+'m':(h?'':'0m')); }
   function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]});}
 
@@ -1580,10 +1616,141 @@ body.view-only .seg button,body.view-only .star,body.view-only #afSave,body.view
   /* ---------- tabs ---------- */
   document.querySelectorAll('.sd-days button').forEach(function(b){ b.addEventListener('click',function(){ day=b.dataset.day; document.querySelectorAll('.sd-days button').forEach(function(x){x.classList.toggle('on',x===b)}); render(); }); });
   document.querySelectorAll('.sd-views button').forEach(function(b){ b.addEventListener('click',function(){ view=b.dataset.view; document.querySelectorAll('.sd-views button').forEach(function(x){x.classList.toggle('on',x===b)}); ['Glance','Map','Pick','Export'].forEach(function(v){ document.getElementById('sd'+v).classList.toggle('on',v.toLowerCase()===view); }); render(); }); });
-  function render(){ if(view==='glance') renderGlance(); else if(view==='map') renderMap(); else if(view==='pick'){ fillFilters(); renderPick(); } if(view==='glance'||view==='export'){ popId=null; document.getElementById('sdPop').hidden=true; } }
+  function render(){ if(view==='glance') renderGlance(); else if(view==='map') renderMap(); else if(view==='pick'){ fillFilters(); renderPick(); } if(view==='glance'||view==='export'){ popId=null; document.getElementById('sdPop').hidden=true; } try{window.dispatchEvent(new Event('yasc-sched'));}catch(e){} }
   render();
 })();
 </script>
 
+<style>
+/* home */
+.hm-hero{background:linear-gradient(135deg,#22405E 0%,#1F5A66 60%,#1F7A6D 100%);color:#fff;border-radius:16px;padding:20px 18px 18px;margin:4px 0 12px;position:relative;overflow:hidden}
+.hm-hero::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(226,177,92,.35),rgba(226,177,92,0) 70%);pointer-events:none}
+.hm-hero h1{font-size:2rem;margin:2px 0 2px;color:#fff}
+.hm-date{font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;opacity:.85}
+.hm-sub{font-size:.9rem;opacity:.85}
+.hm-count{margin-top:14px}
+.hm-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.hm-tiles div{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:8px 4px;text-align:center}
+.hm-tiles b{display:block;font-family:var(--serif);font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.hm-tiles span{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;opacity:.85}
+.hm-cap{font-size:.84rem;opacity:.9;margin-top:8px}
+.hm-badge{display:inline-block;background:#E2B15C;color:#1D2733;font-weight:600;font-size:.82rem;padding:3px 10px;border-radius:99px}
+.hm-card{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px 14px;margin:0 0 12px}
+.hm-lbl{font-size:.76rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.hm-time{margin-left:auto;color:var(--navy);text-transform:none;letter-spacing:0;font-size:.86rem}
+.hm-live{width:8px;height:8px;border-radius:50%;background:#2EAD62;box-shadow:0 0 0 3px rgba(46,173,98,.2)}
+.hm-p{display:flex;gap:10px;align-items:flex-start;padding:8px 0}
+.hm-p+.hm-p{border-top:1px solid var(--line)}
+.av{flex:none;width:34px;height:34px;border-radius:50%;color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center;font-size:.9rem;font-style:normal}
+.av.c{background:#22405E}.av.e{background:#1F7A6D}
+.av.sm{width:20px;height:20px;font-size:.66rem}
+.hm-p .nm{font-size:.78rem;color:var(--ink-2)}
+.hm-p .nm em{font-style:normal;opacity:.8}
+.hm-p .st{font-size:1rem;line-height:1.3}
+.hm-p .st b{font-weight:600}
+.hm-room,.hm-until{display:block;font-size:.8rem;color:var(--ink-2)}
+.hm-tag{display:inline-block;font-size:.68rem;font-weight:600;padding:1px 7px;border-radius:99px;margin-left:6px;vertical-align:2px;background:var(--navy-soft);color:var(--navy)}
+.hm-p.still .st,.hm-day .w.still{color:var(--ink-2);font-size:.9rem}
+.hm-p.still .st b{font-weight:400}
+.hm-day .w.still .av{opacity:.55}
+.hm-day .r{display:grid;grid-template-columns:72px 1fr;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:.88rem}
+.hm-day .r:first-child{border-top:0}
+.hm-day .t{color:var(--navy);font-weight:600;font-size:.82rem;padding-top:1px}
+.hm-day .w{display:flex;gap:6px;align-items:center;margin:1px 0}
+.hm-empty{color:var(--ink-2);font-size:.9rem;padding:4px 0}
+.hm-go{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 8px}
+.hm-go button{font:inherit;font-size:.82rem;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 4px;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.hm-go button span{font-size:1.2rem;color:var(--navy)}
+@media (min-width:700px){.hm-hero{padding:26px 26px 22px}.hm-hero h1{font-size:2.4rem}}
+</style>
+<script>
+(function(){
+  try{ localStorage.removeItem('yasc-wx'); }catch(e){}
+  var NAMES={c:'Claudia',e:'Emily'}, TZ='America/Los_Angeles';
+  var DAYKEY={'2026-10-07':'wed','2026-10-08':'thu','2026-10-09':'fri'}, ORDER=['wed','thu','fri'], DAYNAME={wed:'Wednesday',thu:'Thursday',fri:'Friday'};
+  var OPEN=Date.UTC(2026,9,7,15,0), CLOSE=Date.UTC(2026,9,10,0,0); /* booth opens 8:00 AM PT Oct 7; closes 5:00 PM PT Oct 9 */
+  function S(){ return window.YascSched; }
+  /* ?now=2026-10-07T13:15 previews the page at that Pacific time */
+  var shift=0; try{ var q=/[?&]now=(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/.exec(location.search); if(q) shift=Date.UTC(+q[1],q[2]-1,+q[3],+q[4]+7,+q[5])-Date.now(); }catch(e){}
+  function now(){ return Date.now()+shift; }
+  var dtf=new Intl.DateTimeFormat('en-US',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+  var longDate=new Intl.DateTimeFormat('en-US',{timeZone:TZ,weekday:'long',month:'long',day:'numeric'});
+  function pt(ms){ var o={}; dtf.formatToParts(new Date(ms)).forEach(function(p){o[p.type]=p.value}); return {ymd:o.year+'-'+o.month+'-'+o.day, min:(+o.hour%24)*60+(+o.minute)}; }
+  function fmt(min){ var h=Math.floor(min/60), m=min%60, ap=h>=12?'PM':'AM'; h=h%12||12; return h+':'+(m<10?'0':'')+m+' '+ap; }
+  function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]});}
+  function $(id){ return document.getElementById(id); }
+
+  /* ---------- who is where ---------- */
+  function sessionsFor(d,p){ return S().personBlocks(d,p).filter(function(x){return x.s.track!=='Booth'}); }
+  function statusAt(d,p,t){
+    var cur=sessionsFor(d,p).filter(function(x){return x.a<=t&&t<x.b}).sort(function(x,y){return y.a-x.a})[0];
+    if(cur) return {k:'s:'+cur.s.id, s:cur.s, m:cur.m};
+    var br=S().boothRange(d); if(br&&br[0]<=t&&t<br[1]) return {k:'booth', room:br[2].room};
+    return {k:'free', late:!!(br&&t>=br[1])};
+  }
+  function bounds(d){ var pts=[]; ['c','e'].forEach(function(p){ sessionsFor(d,p).forEach(function(x){pts.push(x.a,x.b)}); }); var br=S().boothRange(d); if(br) pts.push(br[0],br[1]);
+    return pts.filter(function(x,i,a){return a.indexOf(x)===i}).sort(function(a,b){return a-b}); }
+  /* every moment after t when either person's status changes */
+  function changes(d,t){ var out=[], last={c:statusAt(d,'c',t).k, e:statusAt(d,'e',t).k};
+    bounds(d).forEach(function(b){ if(b<=t) return; var c=statusAt(d,'c',b), e=statusAt(d,'e',b); if(c.k===last.c&&e.k===last.e) return; out.push({t:b,c:c,e:e}); last={c:c.k,e:e.k}; });
+    return out; }
+  function untilFor(p,cur,ch){ for(var i=0;i<ch.length;i++){ if(ch[i][p].k!==cur.k) return ch[i].t; } return null; }
+  function stHtml(st){
+    if(st.s) return '<b>'+esc(st.s.title)+'</b>'+(st.m==='first'?'<span class="hm-tag">1st half</span>':st.m==='second'?'<span class="hm-tag">2nd half</span>':'')+(st.s.room?'<span class="hm-room">'+esc(st.s.room)+'</span>':'');
+    if(st.k==='booth') return '<b>At the booth</b>'+(st.room?'<span class="hm-room">'+esc(st.room)+'</span>':'');
+    return '<b>'+(st.late?'Off the clock':'Free')+'</b>';
+  }
+  function stShort(st){ return st.s?esc(st.s.title):st.k==='booth'?'Booth':st.late?'Off the clock':'Free'; }
+  function stStill(st){ return st.s?'Still in '+esc(st.s.title):st.k==='booth'?'Still at the booth':st.late?'Still off the clock':'Still free'; }
+  function person(p,st,until,me,still){ return '<div class="hm-p'+(still?' still':'')+'"><i class="av '+p+'">'+NAMES[p][0]+'</i><div><div class="nm">'+NAMES[p]+(me?' <em>(you)</em>':'')+'</div><div class="st">'+(still?stStill(st):stHtml(st))+(until!=null?'<span class="hm-until">until '+fmt(until)+'</span>':'')+'</div></div></div>'; }
+  function lineup(rows,order,prev){ return rows.map(function(r){ var h='<div class="r"><div class="t">'+fmt(r.t)+'</div><div>'+order.map(function(p){ var same=prev&&prev[p].k===r[p].k; return '<div class="w'+(same?' still':'')+'"><i class="av sm '+p+'">'+NAMES[p][0]+'</i>'+(same?stStill(r[p]):stShort(r[p]))+'</div>'; }).join('')+'</div></div>'; prev=r; return h; }).join(''); }
+
+  /* ---------- countdown ---------- */
+  function renderCount(ms,d){
+    var el=$('hmCount');
+    if(ms<OPEN){ var s=Math.floor((OPEN-ms)/1000), D=Math.floor(s/86400), H=Math.floor(s%86400/3600), M=Math.floor(s%3600/60), X=s%60;
+      el.innerHTML='<div class="hm-tiles">'+[[D,D===1?'day':'days'],[H,H===1?'hour':'hours'],[M,'min'],[X,'sec']].map(function(t){return '<div><b>'+t[0]+'</b><span>'+t[1]+'</span></div>';}).join('')+'</div><div class="hm-cap">until the booth opens Wednesday, October 7 at 8:00 AM</div>'; }
+    else if(ms<CLOSE){ var i=ORDER.indexOf(d), br=S()&&d?S().boothRange(d):null, m=pt(ms).min, cap='';
+      if(br) cap=m<br[0]?'Booth opens at '+fmt(br[0]):m<br[1]?'Booth open until '+fmt(br[1]):'Booth closed for the day';
+      el.innerHTML='<span class="hm-badge">Day '+(i+1)+' of 3</span>'+(cap?'<div class="hm-cap">'+cap+'</div>':''); }
+    else el.innerHTML='<span class="hm-badge">That is a wrap</span><div class="hm-cap">Thanks for a great first year at the CTS booth.</div>';
+  }
+
+  /* ---------- main render ---------- */
+  function render(){
+    var ms=now(), p=pt(ms), d=DAYKEY[p.ymd], u=window.YASC_USER;
+    $('hmHello').textContent=u?'Welcome, '+NAMES[u]:'Welcome';
+    $('hmDate').textContent=longDate.format(new Date(ms))+' · '+fmt(p.min)+' in San Diego';
+    renderCount(ms,d);
+    var order=u==='e'?['e','c']:['c','e'], nowC=$('hmNowCard'), nextC=$('hmNextCard'), dayC=$('hmDayCard');
+    nowC.hidden=nextC.hidden=dayC.hidden=true;
+    if(!S()||ms>=CLOSE) return;
+    var ch, label, rest, restLbl;
+    if(d){
+      var cur={c:statusAt(d,'c',p.min), e:statusAt(d,'e',p.min)}; ch=changes(d,p.min);
+      $('hmNowTime').textContent=fmt(p.min);
+      $('hmNow').innerHTML=order.map(function(x){ return person(x,cur[x],cur[x].k==='free'?null:untilFor(x,cur[x],ch),x===u); }).join('');
+      nowC.hidden=false;
+      if(ch.length){ label=fmt(ch[0].t); rest=ch.slice(1); restLbl='Later today'; var base=cur; }
+      else { var nd=ORDER[ORDER.indexOf(d)+1]; ch=nd?changes(nd,-1):[]; if(ch.length){ label='Tomorrow, '+fmt(ch[0].t); rest=ch.slice(1); restLbl='Later tomorrow'; } }
+    } else {
+      ch=changes('wed',-1); if(ch.length){ label='Wednesday, '+fmt(ch[0].t); rest=ch.slice(1); restLbl='Later on Wednesday'; }
+      $('hmNextCard').querySelector('.hm-lbl').firstChild.nodeValue='First up ';
+    }
+    if(d) $('hmNextCard').querySelector('.hm-lbl').firstChild.nodeValue='Up next ';
+    if(ch&&ch.length){ $('hmNextTime').textContent=label; $('hmNext').innerHTML=order.map(function(x){ return person(x,ch[0][x],null,x===u,base&&base[x].k===ch[0][x].k); }).join(''); nextC.hidden=false; }
+    else if(d){ $('hmNextTime').textContent=''; $('hmNext').innerHTML='<div class="hm-empty">Nothing else on the schedule.</div>'; nextC.hidden=false; }
+    if(rest&&rest.length){ $('hmDayLbl').textContent=restLbl; $('hmDay').innerHTML=lineup(rest,order,ch[0]); dayC.hidden=false; }
+  }
+
+  /* ---------- wiring ---------- */
+  document.getElementById('pane-home').addEventListener('click',function(e){ var b=e.target.closest('[data-goto]'); if(!b) return; var t=document.querySelector('.tabbar [data-pane="'+b.dataset.goto+'"]'); if(t) t.click(); });
+  ['yasc-sched','yasc-user','yasc-pane'].forEach(function(ev){ window.addEventListener(ev,render); });
+  var lastMin=null;
+  setInterval(function(){ if(!$('pane-home').classList.contains('on')) return; var ms=now(), m=pt(ms).min; if(m!==lastMin){ lastMin=m; render(); } else renderCount(ms,DAYKEY[pt(ms).ymd]); },1000);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) render(); });
+  render();
+})();
+</script>
 </body>
 </html>
