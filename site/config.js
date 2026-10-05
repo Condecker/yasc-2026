@@ -6,5 +6,6 @@ window.YASC_CONFIG = {
   SCHEDULE_ID: "main",         // one shared schedule row; change to run a second, separate schedule
   CLAUDIA_CODE: "3333",        // signs in as Claudia (can edit)
   EMILY_CODE: "8888",          // signs in as Emily (can edit)
+  PAUL_CODE: "2222",           // signs in as Paul (view only)
   VIEW_CODE: "5555"            // view only, no name
 };

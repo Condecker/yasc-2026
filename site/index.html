@@ -1323,21 +1323,21 @@ body.view-only .seg button,body.view-only .star,body.view-only #afSave,body.view
 <script src="config.js"></script>
 <script>
 (function(){
-  /* Each person has their own code; both can edit. VIEW_CODE opens read-only with no name. */
-  var DEF={c:'3333', e:'8888', view:'5555'}, NAMES={c:'Claudia', e:'Emily'};
-  function codes(){ var c=window.YASC_CONFIG||{}; return {c:String(c.CLAUDIA_CODE||DEF.c), e:String(c.EMILY_CODE||DEF.e), view:String(c.VIEW_CODE||DEF.view)}; }
-  function setMode(m,u){ u=(m==='edit'&&NAMES[u])?u:null; window.YASC_MODE=m; window.YASC_USER=u;
+  /* Claudia and Emily each have a code that can edit. Paul's code is view only with his name. VIEW_CODE is view only with no name. */
+  var DEF={c:'3333', e:'8888', p:'2222', view:'5555'}, NAMES={c:'Claudia', e:'Emily'}, VIEWERS={p:'Paul'};
+  function codes(){ var c=window.YASC_CONFIG||{}; return {c:String(c.CLAUDIA_CODE||DEF.c), e:String(c.EMILY_CODE||DEF.e), p:String(c.PAUL_CODE||DEF.p), view:String(c.VIEW_CODE||DEF.view)}; }
+  function setMode(m,u){ u=((m==='edit'&&NAMES[u])||(m==='view'&&VIEWERS[u]))?u:null; window.YASC_MODE=m; window.YASC_USER=u; window.YASC_USER_NAME=u?(NAMES[u]||VIEWERS[u]):null;
     try{localStorage.setItem('yasc-mode',m); if(u) localStorage.setItem('yasc-user',u); else localStorage.removeItem('yasc-user');}catch(e){}
-    document.body.classList.toggle('view-only',m!=='edit'); var p=document.getElementById('modePill'); if(p) p.textContent=u?NAMES[u]:'View only';
+    document.body.classList.toggle('view-only',m!=='edit'); var p=document.getElementById('modePill'); if(p) p.textContent=u?window.YASC_USER_NAME:'View only';
     try{window.dispatchEvent(new Event('yasc-user'));}catch(e){} }
   function show(){ var g=document.getElementById('gate'); g.hidden=false; setTimeout(function(){document.getElementById('gateCode').focus()},50); }
   function hide(){ document.getElementById('gate').hidden=true; }
   window.yascGate={ setMode:setMode, show:show };
   document.addEventListener('DOMContentLoaded',function(){
     var saved=null, user=null; try{saved=localStorage.getItem('yasc-mode'); user=localStorage.getItem('yasc-user');}catch(e){}
-    if(saved==='edit'&&NAMES[user]){ setMode('edit',user); } else if(saved==='view'){ setMode('view'); } else { setMode('view'); show(); }
+    if(saved==='edit'&&NAMES[user]){ setMode('edit',user); } else if(saved==='view'){ setMode('view',user); } else { setMode('view'); show(); }
     document.getElementById('gateForm').addEventListener('submit',function(e){ e.preventDefault(); var c=codes(), val=document.getElementById('gateCode').value.trim(); var err=document.getElementById('gateErr');
-      if(val===c.c){ setMode('edit','c'); hide(); } else if(val===c.e){ setMode('edit','e'); hide(); } else if(val===c.view){ setMode('view'); hide(); } else { err.textContent='That passcode is not right.'; document.getElementById('gateCode').value=''; } });
+      if(val===c.c){ setMode('edit','c'); hide(); } else if(val===c.e){ setMode('edit','e'); hide(); } else if(val===c.p){ setMode('view','p'); hide(); } else if(val===c.view){ setMode('view'); hide(); } else { err.textContent='That passcode is not right.'; document.getElementById('gateCode').value=''; } });
     document.getElementById('modePill').addEventListener('click',function(){ document.getElementById('gateCode').value=''; document.getElementById('gateErr').textContent=''; show(); });
   });
 })();
@@ -1719,7 +1719,7 @@ body.view-only .seg button,body.view-only .star,body.view-only #afSave,body.view
   /* ---------- main render ---------- */
   function render(){
     var ms=now(), p=pt(ms), d=DAYKEY[p.ymd], u=window.YASC_USER;
-    $('hmHello').textContent=u?'Welcome, '+NAMES[u]:'Welcome';
+    $('hmHello').textContent=window.YASC_USER_NAME?'Welcome, '+window.YASC_USER_NAME:'Welcome';
     $('hmDate').textContent=longDate.format(new Date(ms))+' · '+fmt(p.min)+' in San Diego';
     renderCount(ms,d);
     var order=u==='e'?['e','c']:['c','e'], nowC=$('hmNowCard'), nextC=$('hmNextCard'), dayC=$('hmDayCard');

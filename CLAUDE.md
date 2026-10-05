@@ -33,7 +33,8 @@ Schedule tab's shared state lives in one Supabase row and syncs in real time bet
 
 ## Passcode gate
 `index.html` shows a passcode screen on first visit. `CLAUDIA_CODE` (default 3333) and `EMILY_CODE` (default 8888) each
-enable editing and set `window.YASC_USER` to `c` or `e`; `VIEW_CODE` (default 5555) opens the site read-only with no name
+enable editing and set `window.YASC_USER` to `c` or `e`. `PAUL_CODE` (default 2222) is view only but greets Paul by name
+(`YASC_USER` = `p`; Paul is not attending, so Home shows both Claudia and Emily). `VIEW_CODE` (default 5555) opens the site read-only with no name
 (`body.view-only`, `window.YASC_MODE`, every write path checks `canEdit()`). The choice is remembered in localStorage
 (`yasc-mode`, `yasc-user`); the pill in the top bar shows the name and reopens the gate. Codes live in `site/config.js`.
 This is a client-side convenience, not security: the anon key can still write the row directly. For real protection
