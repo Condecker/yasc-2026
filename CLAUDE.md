@@ -14,6 +14,8 @@ Schedule tab's shared state lives in one Supabase row and syncs in real time bet
 - `state = { sessions: [...], picks: { [sessionId]: { c: mode, e: mode } }, seedRev: n }`.
   `mode` is `none | all | first | second`. `c` = Claudia, `e` = Emily.
 - A `SEED` array inside `index.html` holds the loaded agenda (Wed and Thu, plus an 8:00 AM to 5:00 PM booth block per day).
+  The schedule covers Wed and Thu only; Friday is the close-down morning (see Prep) and is not scheduled. Imports skip Friday sessions,
+  and `migrate()` rev 3 removes any Friday sessions and picks already in the shared row.
   `mergeSeed()` adds any seed session missing from state by `day|start|title`; `migrate()` applies one-time fixes keyed by `seedRev`.
 - Persistence: `persist()` writes localStorage immediately and debounces `store.save()` 500 ms.
   `store.subscribe()` delivers the remote row on load and on every change; the first delivery merges local picks over remote.
@@ -42,7 +44,7 @@ see Access below.
 
 ## Home tab
 The page always opens on Home. It greets the signed-in person, shows the date and time in San Diego, a countdown to the
-booth opening (Oct 7, 8:00 AM PT), and Right now / Up next / Later today for both people. All times are Pacific.
+booth opening (Oct 7, 8:00 AM PT), Day 1 or 2 of 2 during the event, and Right now / Up next / Later today for both people. All times are Pacific.
 - The schedule script exposes `window.YascSched` (read-only helpers) and fires a `yasc-sched` event on every render;
   the gate fires `yasc-user`. Home re-renders on both, and each minute while visible.
 - Status rules: inside a picked non-booth session = that session; otherwise inside booth hours = at the booth;
@@ -64,6 +66,5 @@ Options, in order of effort:
 - Keep the page self-contained apart from Google Fonts and the supabase-js UMD from jsdelivr.
 
 ## Open items
-- Friday agenda not yet loaded (import via Pick sessions > Import, or add to SEED).
 - Cost column in Talk tracks > Project menu, and meetup spots, still show [fill in].
 - Session descriptions are blank until each day's agenda text is re-imported.
