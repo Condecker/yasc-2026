@@ -16,6 +16,7 @@ Schedule tab's shared state lives in one Supabase row and syncs in real time bet
 - A `SEED` array inside `index.html` holds the loaded agenda (Wed and Thu, plus an 8:00 AM to 5:00 PM booth block per day).
   The schedule covers Wed and Thu only; Friday is the close-down morning (see Prep) and is not scheduled. Imports skip Friday sessions,
   and `migrate()` rev 3 removes any Friday sessions and picks already in the shared row.
+  The booth is at the Manchester Grand Hyatt (not SDCC); `migrate()` rev 4 moves saved booth blocks there.
   `mergeSeed()` adds any seed session missing from state by `day|start|title`; `migrate()` applies one-time fixes keyed by `seedRev`.
 - Persistence: `persist()` writes localStorage immediately and debounces `store.save()` 500 ms.
   `store.subscribe()` delivers the remote row on load and on every change; the first delivery merges local picks over remote.
